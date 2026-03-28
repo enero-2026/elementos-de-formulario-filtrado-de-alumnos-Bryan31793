@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, FlatList } from 'react-native';
-import { Searchbar } from 'react-native-paper';
+import { Searchbar, Button } from 'react-native-paper';
+import Agregar from './Agregar';
 
 export default function Alumnos() {
   const [alumnos, setAlumnos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [buscaAlumno, setBuscaAlumno] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     console.log("Pantalla cargada");
@@ -58,6 +60,30 @@ export default function Alumnos() {
     alumno.nombre.toLowerCase().includes(buscaAlumno.toLowerCase())
   );
 
+  const handleAddAlumno = useCallback((nuevoAlumno) => {
+    // Validar que la matrícula no sea duplicada desde el padre
+    // Validación robusta: comparar matrículas trimmed
+    const alumnoExistente = alumnos.find(
+      alumno => alumno.matricula.trim() === nuevoAlumno.matricula.trim()
+    );
+
+    if (alumnoExistente) {
+      // Si existe, no hacer nada (el modal mostrará el error)
+      return false;
+    }
+
+    // Usar el operador spread (...) para copiar todos los alumnos
+    // y agregar el nuevo al final del arreglo
+    setAlumnos([...alumnos, nuevoAlumno]);
+    // Cerrar el modal después de agregar
+    setModalVisible(false);
+    return true;
+  }, [alumnos]);
+
+  const handleCancelModal = () => {
+    setModalVisible(false);
+  };
+
   if (cargando) {
     return (
       <View style={styles.center}>
@@ -77,6 +103,13 @@ export default function Alumnos() {
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>Lista de Alumnos</Text>
+      <Button
+        mode="contained"
+        onPress={() => setModalVisible(true)}
+        style={styles.addButton}
+      >
+        + Agregar Alumno
+      </Button>
       <Searchbar
         placeholder="Buscar alumno..."
         onChangeText={setBuscaAlumno}
@@ -93,6 +126,11 @@ export default function Alumnos() {
           </View>
         )}
       />
+      <Agregar
+        visible={modalVisible}
+        onAdd={handleAddAlumno}
+        onCancel={handleCancelModal}
+      />
     </View>
   );
 }
@@ -103,6 +141,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: 50,
     paddingHorizontal: 16,
+  },
+  addButton: {
+    marginBottom: 16,
   },
   center: {
     flex: 1,
